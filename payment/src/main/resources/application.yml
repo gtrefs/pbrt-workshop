@@ -1,0 +1,7 @@
+coffeeshop:
+  order:
+    prices: '{"melange": "5.00", "black": "2.35", "espresso": "1.50", "ristretto": "1.00", "cappuccino": "3.25"}'
+  barista:
+    endpoint: "http://localhost:8080"
+  payment:
+    endpoint: "http://localhost:8081"

@@ -1,0 +1,7 @@
+plugins {
+    id 'coffeeshop.java-service'
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+}

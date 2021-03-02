@@ -1,0 +1,23 @@
+FROM adoptopenjdk:11.0.6_10-jdk-hotspot-bionic AS builder
+ENV APP_HOME=/root/dev/coffeeshop
+WORKDIR $APP_HOME
+COPY settings.gradle gradle.properties gradlew gradlew.bat $APP_HOME/
+COPY buildSrc $APP_HOME/buildSrc
+COPY coffee/build.gradle $APP_HOME/coffee/build.gradle
+COPY order/build.gradle $APP_HOME/order/build.gradle
+COPY payment/build.gradle $APP_HOME/payment/build.gradle
+COPY gradle $APP_HOME/gradle
+# Download dependencies
+RUN ./gradlew clean build --no-daemon > /dev/null 2>&1 || true
+
+# Compile
+COPY order/src $APP_HOME/order/src
+COPY coffee/src $APP_HOME/coffee/src
+COPY payment/src $APP_HOME/payment/src
+RUN ./gradlew :coffee:build -x test --continue
+
+FROM adoptopenjdk:11.0.6_10-jre-hotspot-bionic
+WORKDIR /root/
+COPY --from=builder /root/dev/coffeeshop/coffee/build/libs/*.jar app.jar
+EXPOSE 8080
+ENTRYPOINT ["java","-Dnetworkaddress.cache.ttl=0","-Dnetworkaddress.cache.negative.ttl=0","-jar","/root/app.jar"]

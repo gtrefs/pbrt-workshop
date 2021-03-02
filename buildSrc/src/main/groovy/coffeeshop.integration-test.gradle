@@ -1,0 +1,60 @@
+plugins {
+	id 'java'
+	id 'idea'
+}
+
+sourceCompatibility='11'
+
+repositories {
+	mavenCentral()
+}
+
+sourceSets {
+	integration {
+		compileClasspath += sourceSets.main.output
+		runtimeClasspath += sourceSets.main.output
+	}
+}
+
+configurations {
+	integrationImplementation.extendsFrom implementation
+	integrationImplementation.extendsFrom testImplementation
+	integrationRuntimeOnly.extendsFrom runtimeOnly
+}
+
+task intTest(type: Test) {
+	description = 'Runs integration tests.'
+	group = 'verification'
+
+	testClassesDirs = sourceSets.integration.output.classesDirs
+	classpath = sourceSets.integration.runtimeClasspath
+}
+
+intTest {
+	useJUnitPlatform {
+		includeEngines "jqwik", "junit-jupiter"
+	}
+}
+
+check {
+	dependsOn intTest
+}
+
+dependencies {
+	implementation platform('org.testcontainers:testcontainers-bom:1.15.2')
+	testImplementation "org.testcontainers:testcontainers"
+	testImplementation "org.testcontainers:postgresql"
+	testImplementation "org.testcontainers:toxiproxy"
+	testImplementation 'org.apache.logging.log4j:log4j-slf4j-impl:2.14.0'
+	testImplementation 'org.apache.logging.log4j:log4j-core:2.14.0'
+	// testImplementation 'org.apache.logging.log4j:log4j-api:2.14.0'
+	// testImplementation "eu.rekawek.toxiproxy:toxiproxy-java:2.1.4"
+	testImplementation 'org.awaitility:awaitility:4.0.3'
+	testImplementation 'net.jqwik:jqwik:1.5.0'
+	testImplementation 'org.junit.jupiter:junit-jupiter-api:5.6.0'
+	testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine'
+	compile 'org.jetbrains:annotations:16.0.2'
+	integrationImplementation 'io.rest-assured:rest-assured-all:4.2.0'
+	integrationImplementation 'io.rest-assured:rest-assured:4.2.0'
+	integrationImplementation 'io.vavr:vavr:0.10.2'
+}
