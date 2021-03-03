@@ -5,13 +5,42 @@ import java.util.*;
 
 public interface OrderStatus {
 
+	default boolean orderNotPossible(){
+		return  false;
+	}
+
+	default boolean orderAccepted(){
+		return false;
+	}
+
+	default boolean coffeeOrdered(){
+		return false;
+	}
+
+	default boolean coffeePayed(){
+		return false;
+	}
+
+	default Optional<Order> order(){
+		return Optional.empty();
+	}
+
 	final class OrderNotPossible implements OrderStatus {
 		public final ErrorResponse error;
+		public final Reason reason;
 
-		public OrderNotPossible(ErrorResponse error) {this.error = error;}
+		public OrderNotPossible(ErrorResponse error, Reason reason) {
+			this.error = error;
+			this.reason = reason;
+		}
 
 		public static OrderNotPossible empty() {
-			return new OrderNotPossible(new ErrorResponse("No message.", Collections.emptyList()));
+			return new OrderNotPossible(new ErrorResponse("No message.", Collections.emptyList()), Reason.NONE);
+		}
+
+		@Override
+		public boolean orderNotPossible() {
+			return true;
 		}
 
 		@Override
@@ -19,6 +48,25 @@ public interface OrderStatus {
 			return "OrderNotPossible{" +
 					"error=" + error +
 					'}';
+		}
+
+		public enum Reason {
+			PAYMENT_NOT_POSSIBLE{
+				@Override
+				public String toString() {
+					return "Payment not possible.";
+				}
+			}, BARISTA_NOT_AVAILABLE {
+				@Override
+				public String toString() {
+					return "Barista not available.";
+				}
+			}, NONE {
+				@Override
+				public String toString() {
+					return "No reason.";
+				}
+			}
 		}
 	}
 
@@ -28,6 +76,16 @@ public interface OrderStatus {
 
 		public OrderAccepted(Order order){
 			this.order = order;
+		}
+
+		@Override
+		public boolean orderAccepted() {
+			return true;
+		}
+
+		@Override
+		public Optional<Order> order() {
+			return Optional.of(order);
 		}
 
 		@Override
@@ -53,6 +111,16 @@ public interface OrderStatus {
 		}
 
 		@Override
+		public boolean coffeeOrdered() {
+			return true;
+		}
+
+		@Override
+		public Optional<Order> order() {
+			return Optional.of(order);
+		}
+
+		@Override
 		public String toString() {
 			return "CoffeeOrdered{" +
 					"order=" + order +
@@ -70,6 +138,16 @@ public interface OrderStatus {
 			this.receipt = receipt;
 			this.cup = cup;
 			this.order = order;
+		}
+
+		@Override
+		public boolean coffeePayed() {
+			return true;
+		}
+
+		@Override
+		public Optional<Order> order() {
+			return Optional.of(order);
 		}
 
 		@Override

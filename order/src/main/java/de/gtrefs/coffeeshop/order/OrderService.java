@@ -6,6 +6,8 @@ import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
 
+import com.fasterxml.jackson.core.*;
+import com.fasterxml.jackson.databind.*;
 import de.gtrefs.coffeeshop.order.OrderStatus.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
@@ -13,6 +15,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.*;
 import org.springframework.web.reactive.function.client.*;
 import reactor.core.publisher.*;
+
+import static de.gtrefs.coffeeshop.order.OrderStatus.OrderNotPossible.Reason.*;
 
 @Service
 public class OrderService {
@@ -29,6 +33,7 @@ public class OrderService {
 	private final Prices prices;
 	private final ConcurrentHashMap<Long, OrderStatus> orderRepository;
 	private final AtomicLong orderNumberGenerator = new AtomicLong(1);
+	private final ObjectReader errorReader = new ObjectMapper().readerFor(ErrorResponse.class);
 
 	private WebClient barista;
 	private WebClient paymentProvider;
@@ -61,7 +66,7 @@ public class OrderService {
 		return Mono.just(orderAccepted);
 	}
 
-	private Mono<CoffeeOrdered> makeCoffee(OrderAccepted orderAccepted) {
+	private Mono<OrderStatus> makeCoffee(OrderAccepted orderAccepted) {
 		logger.info("Order accepted, making coffee: {}.", orderAccepted);
 		var order = orderAccepted.order;
 		return barista.post()
@@ -70,12 +75,29 @@ public class OrderService {
 					  .bodyValue(new CupOrder(order.getFlavor()))
 					  .retrieve()
 					  .bodyToMono(OrderedCup.class)
-					  .map(cup -> (CoffeeOrdered) orderRepository.computeIfPresent(order.getOrderNumber(), (number, status) -> new OrderStatus.CoffeeOrdered(order, cup)));
+					  .map(cup -> orderRepository.computeIfPresent(order.getOrderNumber(), (number, status) -> new OrderStatus.CoffeeOrdered(order, cup)))
+					  .onErrorResume(WebClientResponseException.class, e -> {
+						  logger.warn("Order not possible {}.", orderAccepted.order, e);
+						  return Mono.just(readOrderNotPossible(e.getResponseBodyAsString()));
+					  });
 	}
 
-	private Mono<CoffeePayed> payForCoffee(OrderStatus.CoffeeOrdered ordered) {
+	private OrderStatus readOrderNotPossible(String response) {
+		if(response == null || response.isEmpty()) return OrderNotPossible.empty();
+		try{
+			ErrorResponse o = errorReader.readValue(response);
+			return new OrderNotPossible(o, OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
+		} catch (JsonProcessingException e) {
+			return OrderNotPossible.empty();
+		}
+	}
+
+	private Mono<OrderStatus> payForCoffee(OrderStatus orderStatus) {
+		if(!orderStatus.coffeeOrdered()){
+			return Mono.just(orderStatus);
+		}
+		CoffeeOrdered ordered = (CoffeeOrdered) orderStatus;
 		logger.info("Coffee ordered, paying for coffee: {}.", ordered);
-		Order order = ordered.order;
 		return Mono.justOrEmpty(paymentCharge(ordered)).flatMap(paymentCharge -> {
 			return paymentProvider.post()
 				   .uri(uriBuilder -> uriBuilder.path("charge").build())
@@ -83,8 +105,17 @@ public class OrderService {
 				   .bodyValue(paymentCharge)
 				   .retrieve()
 				   .bodyToMono(Receipt.class)
-				   .map(receipt -> (CoffeePayed) orderRepository.computeIfPresent(order.getOrderNumber(), (number, status) -> new CoffeePayed(receipt, ordered.cup, order)));
-		});
+				   .map(receipt -> orderRepository.computeIfPresent(ordered.order.getOrderNumber(), (number, status) -> new CoffeePayed(receipt, ordered.cup, ordered.order)));
+		}).switchIfEmpty(paymentNotPossible());
+	}
+
+	private Mono<OrderStatus> paymentNotPossible() {
+		var errorResponse = new ErrorResponse(
+				"INTERNAL_SERVER_ERROR",
+				Collections.singletonList("Something went wrong while paying for your cup.")
+		);
+		return Mono.just((OrderStatus) new OrderNotPossible(errorResponse, PAYMENT_NOT_POSSIBLE))
+				   .doOnNext(entity -> logger.error("Something went wrong while paying."));
 	}
 
 	private Optional<PaymentCharge> paymentCharge(CoffeeOrdered status) {
