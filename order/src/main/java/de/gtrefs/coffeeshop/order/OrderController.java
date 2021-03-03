@@ -16,7 +16,6 @@ public class OrderController {
 
 	private final static Logger logger = LoggerFactory.getLogger(OrderController.class);
 
-	private final ObjectReader errorReader = new ObjectMapper().readerFor(ErrorResponse.class);
 	private final OrderService orderService;
 
 	@Autowired

@@ -34,13 +34,22 @@ public class CoffeeShopModel {
 				orders.put(orderNumber, coffeePayed);
 			});
 		}
-		return new ModelResponse(unknownFlavor(modelOrder.getFlavor()).andThen(response -> {
-			// response.as(OrderStatus.OrderNotPossible.class);
-		}));
+		return new ModelResponse(unknownFlavor(modelOrder.getFlavor()));
 	}
 
 	private boolean hasKnownFlavor(Order order){
 		return matcherForKnownFlavors.matcher(order.getFlavor().toLowerCase()).matches();
+	}
+
+	public ModelResponse checkStatus(Long orderId) {
+		return new ModelResponse(response -> {
+			var modelStatus = orders.get(orderId);
+			if(modelStatus == null){
+				assertThat(response.getStatusCode()).isEqualTo(404);
+			} else {
+				assertThat(response.getStatusCode()).isEqualTo(200);
+			}
+		});
 	}
 
 	public static class ModelResponse {

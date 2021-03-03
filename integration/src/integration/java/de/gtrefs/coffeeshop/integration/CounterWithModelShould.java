@@ -26,7 +26,27 @@ public class CounterWithModelShould extends CoffeeShop{
 		Arbitrary<Action<RequestSpecification>> orders = Combinators.combine(flavors, creditCardNumber)
 																 .as(Order::new)
 																 .map(order -> new OrderCoffee(model, order));
-		return Arbitraries.sequences(orders );
+		return Arbitraries.sequences(orders);
+	}
+
+	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
+	public void return_successful_orders(@ForAll("order_and_get_orders") ActionSequence<RequestSpecification> actions){
+		actions.run(counter);
+	}
+
+	@Provide
+	private ActionSequenceArbitrary<RequestSpecification> order_and_get_orders(){
+		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(10, orderCoffee()), Tuple.of(1, checkState())));
+	}
+
+	private Arbitrary<Action<RequestSpecification>> checkState() {
+		return Arbitraries.longs().between(1, 5000).map(id -> new CheckStatus(model, id));
+	}
+
+	private Arbitrary<Action<RequestSpecification>> orderCoffee() {
+		var flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
+		var creditCardNumbers = Arbitraries.strings().numeric().ofMinLength(13).ofMaxLength(16);
+		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).map(order -> new OrderCoffee(model, order));
 	}
 
 	public class OrderCoffee implements Action<RequestSpecification> {
@@ -49,6 +69,30 @@ public class CounterWithModelShould extends CoffeeShop{
 		public RequestSpecification run(RequestSpecification state) {
 			var response = state.body(order).post("/order");
 			model.order(order).checkPostCondition(response);
+			return state;
+		}
+	}
+
+	public class CheckStatus implements Action<RequestSpecification> {
+
+		private final CoffeeShopModel model;
+		private Long orderId;
+
+		public CheckStatus(CoffeeShopModel model, Long orderId) {
+			this.model = model;
+			this.orderId = orderId;
+		}
+
+		@Override
+		public boolean precondition(RequestSpecification state) {
+			Statistics.label("Action").collect("Check order state");
+			return true;
+		}
+
+		@Override
+		public RequestSpecification run(RequestSpecification state) {
+			var response = state.body(orderId).get("/order/"+orderId);
+			model.checkStatus(orderId).checkPostCondition(response);
 			return state;
 		}
 	}
