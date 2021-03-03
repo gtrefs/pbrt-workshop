@@ -24,8 +24,17 @@ public class OrderController {
 		this.orderService = orderService;
 	}
 
+	@GetMapping("/order/{id}")
+	public Mono<ResponseEntity<OrderStatus>> orderStatus(@PathVariable Long id){
+		return orderService.oderStatus(id).map(orderStatus -> {
+			return ResponseEntity.status(200)
+								 .contentType(MediaType.APPLICATION_JSON)
+					             .body(orderStatus);
+		}).switchIfEmpty(Mono.just(ResponseEntity.notFound().build()));
+	}
+
 	@PostMapping("/order")
-	Mono<ResponseEntity<OrderStatus>> orderCoffee(@RequestBody Order coffeeOrder) {
+	public Mono<ResponseEntity<OrderStatus>> orderCoffee(@RequestBody Order coffeeOrder) {
 		return orderService.orderCoffee(coffeeOrder)
 		   .map(orderStatus -> {
 				if(orderStatus.orderNotPossible()){

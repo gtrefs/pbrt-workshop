@@ -124,6 +124,11 @@ public class OrderService {
 		return prices.forOrder(order).map(price -> PaymentCharge.of(price, number));
 	}
 
+	public Mono<OrderStatus> oderStatus(Long id) {
+		OrderStatus orderStatus = orderRepository.get(id);
+		return orderStatus == null ? Mono.empty() : Mono.just(orderStatus);
+	}
+
 	public static class CupOrder {
 		public final String flavor;
 
