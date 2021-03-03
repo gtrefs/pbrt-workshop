@@ -5,6 +5,7 @@ import java.util.*;
 import com.fasterxml.jackson.core.*;
 import com.fasterxml.jackson.databind.*;
 import de.gtrefs.coffeeshop.order.OrderService.*;
+import de.gtrefs.coffeeshop.order.OrderStatus.*;
 import org.slf4j.*;
 import org.springframework.beans.factory.annotation.*;
 import org.springframework.http.*;
@@ -27,7 +28,7 @@ public class OrderController {
 	}
 
 	@PostMapping("/order")
-	Mono<ResponseEntity<OrderService.OrderStatus>> orderCoffee(@RequestBody Order coffeeOrder) {
+	Mono<ResponseEntity<OrderStatus>> orderCoffee(@RequestBody Order coffeeOrder) {
 		return orderService.orderCoffee(coffeeOrder)
 				   .map(successfulOrder -> {
 						logger.info("Order successful {}.", successfulOrder);
@@ -42,7 +43,7 @@ public class OrderController {
 				   }).switchIfEmpty(paymentNotPossible());
 	}
 
-	private Mono<ResponseEntity<OrderService.OrderStatus>> paymentNotPossible() {
+	private Mono<ResponseEntity<OrderStatus>> paymentNotPossible() {
 		var errorResponse = new ErrorResponse(
 				"INTERNAL_SERVER_ERROR",
 				Collections.singletonList("Something went wrong while paying for your cup.")

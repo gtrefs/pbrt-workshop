@@ -1,8 +1,13 @@
 package de.gtrefs.coffeeshop.integration;
 
+import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonInclude.*;
+
 public class Order {
 	private String flavor;
 	private String creditCardNumber;
+	@JsonInclude(Include.NON_NULL)
+	private Long orderNumber;
 
 	public Order(String flavor, String creditCardNumber){
 		this.flavor = flavor;
@@ -26,6 +31,14 @@ public class Order {
 
 	public void setFlavor(String flavor) {
 		this.flavor = flavor;
+	}
+
+	public Long getOrderNumber() {
+		return orderNumber;
+	}
+
+	public void setOrderNumber(Long orderNumber) {
+		this.orderNumber = orderNumber;
 	}
 
 	@Override
