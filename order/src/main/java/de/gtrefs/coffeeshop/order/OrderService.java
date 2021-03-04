@@ -2,6 +2,7 @@ package de.gtrefs.coffeeshop.order;
 
 import javax.annotation.*;
 import java.math.*;
+import java.net.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -39,6 +40,7 @@ public class OrderService {
 	private WebClient barista;
 	private FallBackBarista fallBackBarista = new FallBackBarista();
 	private WebClient paymentProvider;
+	private FallbackCash fallbackCash = new FallbackCash();
 
 	@Autowired
 	public OrderService(Prices prices, WebClient.Builder webClientBuilder){
@@ -118,16 +120,26 @@ public class OrderService {
 				   .retrieve()
 				   .bodyToMono(Receipt.class)
 				   .map(receipt -> (OrderStatus) new CoffeePayed(receipt, ordered.cup, ordered.order));
+		}).onErrorResume(WebClientRequestException.class, e -> {
+			logger.warn("Payment provider could not process payment. Paying by cash.", e);
+			return payByCash(ordered);
 		}).switchIfEmpty(paymentNotPossible(ordered.order()))
 				   .doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
 	}
 
-	private Mono<OrderStatus> paymentNotPossible(Order order) {
+	private Mono<? extends OrderStatus> payByCash(CoffeeOrdered ordered) {
+		return paymentCharge(ordered)
+				.map(paymentCharge -> fallbackCash.payByCash(ordered, paymentCharge))
+				.map(Mono::just)
+				.orElseGet(Mono::empty);
+	}
+
+	private Mono<? extends OrderStatus> paymentNotPossible(Order order) {
 		var errorResponse = new ErrorResponse(
 				"INTERNAL_SERVER_ERROR",
 				Collections.singletonList("Something went wrong while paying for your cup.")
 		);
-		return Mono.just((OrderStatus) new OrderNotPossible(order, errorResponse, PAYMENT_NOT_POSSIBLE))
+		return Mono.just(new OrderNotPossible(order, errorResponse, PAYMENT_NOT_POSSIBLE))
 				   .doOnNext(entity -> logger.error("Something went wrong while paying."));
 	}
 
