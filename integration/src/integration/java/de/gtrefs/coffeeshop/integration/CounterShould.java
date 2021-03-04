@@ -26,7 +26,7 @@ public class CounterShould extends CoffeeShop {
 			   .statusCode(400)
 		   .and()
 			   .assertThat()
-			   .body("error.details[0]", startsWith("We don't offer Latte Macchiato."));
+			   .body("error.details[0]", startsWith("We don't offer"));
 	}
 
 	// If we ask ourselves, what should happen in the case when flavors are ordered
