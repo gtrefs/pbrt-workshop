@@ -103,3 +103,4 @@ modules.xml
 # Sonarlint plugin
 .idea/sonarlint
 
+integration/.jqwik-database
