@@ -121,8 +121,9 @@ public class OrderService {
 				   .bodyToMono(Receipt.class)
 				   .map(receipt -> (OrderStatus) new CoffeePayed(receipt, ordered.cup, ordered.order));
 		}).onErrorResume(WebClientRequestException.class, e -> {
-			logger.warn("Payment provider could not process payment. Paying by cash.", e);
-			return payByCash(ordered);
+			logger.warn("Payment provider could not process payment. We cannot fulfill the order.", e);
+			// Todo: Fall back to cash
+			return Mono.empty();
 		}).switchIfEmpty(paymentNotPossible(ordered.order()))
 				   .doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
 	}
