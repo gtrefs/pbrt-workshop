@@ -35,8 +35,7 @@ public class CoffeeShopModel {
 			});
 		}
 		return new ModelResponse(unknownFlavor().andThen(response -> {
-			var orderNotPossible = response.as(OrderStatus.OrderNotPossible.class);
-			orders.put(orderNotPossible.order.getOrderNumber(), orderNotPossible);
+				todo("Store order state");
 		}));
 	}
 
@@ -95,5 +94,9 @@ public class CoffeeShopModel {
 				assertThat(actualResponseTime).isLessThanOrEqualTo(maxResponseTime);
 			};
 		}
+	}
+
+	private <R> R todo(String todo){
+		throw new RuntimeException(todo);
 	}
 }

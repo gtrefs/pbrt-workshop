@@ -56,16 +56,8 @@ public class CounterWithModelShould extends CoffeeShop{
 		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(10, orderExistingFlavor()), Tuple.of(1, checkState())));
 	}
 	// Exercise 2: In the test above we checked that we can get the state
-	// of successful orders. But how should we handle orders which are rejected?
-	// Maybe our Barista does not know how to make a coffee with a specific
-	// flavor? Maybe payment fails? Should the state of the order be saved
-	// in such a case? If we do, how do we need to adapt our model and code in
-	// order to reflect this?
-	// Hint: The order service does not return our order when it fails. But,
-	// our model depends on this id. Maybe you can adapt the service? If you
-	// decide to *not* store an order when it was unsuccessful, how do you do
-	// that?
-
+	// of successful orders. Any order which does not contain a supported flavor,
+	// should be rejected. The resulting state should be stored in the model.
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void return_unsuccessful_orders(@ForAll("order_existing_and_not_existing_flavors") ActionSequence<RequestSpecification> actions) {
 		actions.run(counter);
@@ -83,9 +75,7 @@ public class CounterWithModelShould extends CoffeeShop{
 	}
 
 	private Arbitrary<Action<RequestSpecification>> orderRandomFlavor() {
-		var flavors = Arbitraries.strings().ascii().ofMinLength(3).ofMinLength(15);
-		var creditCardNumbers = Arbitraries.strings().numeric().ofMinLength(13).ofMaxLength(16);
-		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).map(order -> new OrderCoffee(model, order, "Random Flavor"));
+		return todo("return orders with random flavor");
 	}
 
 	private Arbitrary<Action<RequestSpecification>> orderExistingFlavor() {
@@ -156,5 +146,9 @@ public class CounterWithModelShould extends CoffeeShop{
 					"orderId=" + orderId +
 					'}';
 		}
+	}
+
+	private <R> R todo(String todo){
+		throw new RuntimeException(todo);
 	}
 }
