@@ -21,7 +21,7 @@ public class Cup implements Serializable {
 
 	@Pattern(regexp = "melange|black|espresso|ristretto|cappuccino",
 			flags = Pattern.Flag.CASE_INSENSITIVE,
-			message = "We don't offer ${validatedValue}. Please pick one of " +
+			message = "We don't offer this flavor. Please pick one of " +
 					"Black Coffee, Melange, Espresso, Ristretto or Cappuccino.")
 	@NotNull(message = "Please order something.")
 	private String flavor;

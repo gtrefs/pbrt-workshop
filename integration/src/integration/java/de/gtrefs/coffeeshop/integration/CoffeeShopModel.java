@@ -26,15 +26,17 @@ public class CoffeeShopModel {
 		if(hasKnownFlavor(modelOrder)) {
 			return new ModelResponse(response -> {
 				assertThat(response.getStatusCode()).isEqualTo(200);
-				OrderStatus.CoffeePayed coffeePayed = response.as(OrderStatus.CoffeePayed.class);
+				var coffeePayed = response.as(OrderStatus.CoffeePayed.class);
 				var orderNumber = coffeePayed.order.getOrderNumber();
 				assertThat(orderNumber).isGreaterThan(0L);
-				modelOrder.setOrderNumber(orderNumber);
 				assertThat(coffeePayed.receipt.getBalance()).isGreaterThan(new BigDecimal(-10));
 				orders.put(orderNumber, coffeePayed);
 			});
 		}
-		return new ModelResponse(unknownFlavor(modelOrder.getFlavor()));
+		return new ModelResponse(unknownFlavor().andThen(response -> {
+			var orderNotPossible = response.as(OrderStatus.OrderNotPossible.class);
+			orders.put(orderNotPossible.order.getOrderNumber(), orderNotPossible);
+		}));
 	}
 
 	private boolean hasKnownFlavor(Order order){
@@ -67,10 +69,10 @@ public class CoffeeShopModel {
 
 	interface PostCondition extends Consumer<Response> {
 
-		static Consumer<Response> unknownFlavor(String flavor){
+		static Consumer<Response> unknownFlavor(){
 			return isBadRequest().andThen(response -> {
 				String errorMessage = response.body().jsonPath().getString("error.details[0]");
-				assertThat(errorMessage).startsWith("We don't offer "+flavor);
+				assertThat(errorMessage).startsWith("We don't offer this flavor");
 			});
 		}
 

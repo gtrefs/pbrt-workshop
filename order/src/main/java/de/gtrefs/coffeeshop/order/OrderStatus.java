@@ -21,26 +21,31 @@ public interface OrderStatus {
 		return false;
 	}
 
-	default Optional<Order> order(){
-		return Optional.empty();
-	}
+	Order order();
 
 	final class OrderNotPossible implements OrderStatus {
+		public final Order order;
 		public final ErrorResponse error;
 		public final Reason reason;
 
-		public OrderNotPossible(ErrorResponse error, Reason reason) {
+		public OrderNotPossible(Order order, ErrorResponse error, Reason reason) {
+			this.order = order;
 			this.error = error;
 			this.reason = reason;
 		}
 
 		public static OrderNotPossible empty() {
-			return new OrderNotPossible(new ErrorResponse("No message.", Collections.emptyList()), Reason.NONE);
+			return new OrderNotPossible(Order.empty(), new ErrorResponse("No message.", Collections.emptyList()), Reason.NONE);
 		}
 
 		@Override
 		public boolean orderNotPossible() {
 			return true;
+		}
+
+		@Override
+		public Order order() {
+			return order;
 		}
 
 		@Override
@@ -84,8 +89,8 @@ public interface OrderStatus {
 		}
 
 		@Override
-		public Optional<Order> order() {
-			return Optional.of(order);
+		public Order order() {
+			return order;
 		}
 
 		@Override
@@ -116,8 +121,8 @@ public interface OrderStatus {
 		}
 
 		@Override
-		public Optional<Order> order() {
-			return Optional.of(order);
+		public Order order() {
+			return order;
 		}
 
 		@Override
@@ -146,8 +151,8 @@ public interface OrderStatus {
 		}
 
 		@Override
-		public Optional<Order> order() {
-			return Optional.of(order);
+		public Order order() {
+			return order;
 		}
 
 		@Override

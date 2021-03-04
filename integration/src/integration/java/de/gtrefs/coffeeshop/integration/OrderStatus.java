@@ -8,19 +8,20 @@ import com.fasterxml.jackson.annotation.*;
 public interface OrderStatus {
 
 	final class OrderNotPossible implements OrderStatus {
+		public final Order order;
 		public final ErrorResponse error;
 
 		@JsonCreator
-		public OrderNotPossible(@JsonProperty("error") ErrorResponse error) {this.error = error;}
-
-		public static OrderNotPossible empty() {
-			return new OrderNotPossible(new ErrorResponse("No message.", Collections.emptyList()));
+		public OrderNotPossible(@JsonProperty("order") Order order, @JsonProperty("error") ErrorResponse error) {
+			this.order = order;
+			this.error = error;
 		}
 
 		@Override
 		public String toString() {
 			return "OrderNotPossible{" +
-					"error=" + error +
+					"order=" + order +
+					", error=" + error +
 					'}';
 		}
 

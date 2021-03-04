@@ -19,6 +19,10 @@ public class Order implements Serializable {
 		this.creditCardNumber = creditCardNumber;
 	}
 
+	public static Order empty(){
+		return new Order(-1L, "No flavor.", "0");
+	}
+
 	public Order(String flavor){
 		this.flavor = flavor;
 	}

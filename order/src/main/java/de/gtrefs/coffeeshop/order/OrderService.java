@@ -75,18 +75,18 @@ public class OrderService {
 					  .bodyValue(new CupOrder(order.getFlavor()))
 					  .retrieve()
 					  .bodyToMono(OrderedCup.class)
-					  .map(cup -> orderRepository.computeIfPresent(order.getOrderNumber(), (number, status) -> new OrderStatus.CoffeeOrdered(order, cup)))
+					  .map(cup -> (OrderStatus) new CoffeeOrdered(order, cup))
 					  .onErrorResume(WebClientResponseException.class, e -> {
-						  logger.warn("Order not possible {}.", orderAccepted.order, e);
-						  return Mono.just(readOrderNotPossible(e.getResponseBodyAsString()));
-					  });
+						  logger.warn("Order not possible {}.", order, e);
+						  return Mono.just(readOrderNotPossible(order, e.getResponseBodyAsString()));
+					  }).doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
 	}
 
-	private OrderStatus readOrderNotPossible(String response) {
+	private OrderStatus readOrderNotPossible(Order order, String response) {
 		if(response == null || response.isEmpty()) return OrderNotPossible.empty();
 		try{
 			ErrorResponse o = errorReader.readValue(response);
-			return new OrderNotPossible(o, OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
+			return new OrderNotPossible(order, o, OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
 		} catch (JsonProcessingException e) {
 			return OrderNotPossible.empty();
 		}
@@ -105,16 +105,17 @@ public class OrderService {
 				   .bodyValue(paymentCharge)
 				   .retrieve()
 				   .bodyToMono(Receipt.class)
-				   .map(receipt -> orderRepository.computeIfPresent(ordered.order.getOrderNumber(), (number, status) -> new CoffeePayed(receipt, ordered.cup, ordered.order)));
-		}).switchIfEmpty(paymentNotPossible());
+				   .map(receipt -> (OrderStatus) new CoffeePayed(receipt, ordered.cup, ordered.order));
+		}).switchIfEmpty(paymentNotPossible(ordered.order()))
+				   .doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
 	}
 
-	private Mono<OrderStatus> paymentNotPossible() {
+	private Mono<OrderStatus> paymentNotPossible(Order order) {
 		var errorResponse = new ErrorResponse(
 				"INTERNAL_SERVER_ERROR",
 				Collections.singletonList("Something went wrong while paying for your cup.")
 		);
-		return Mono.just((OrderStatus) new OrderNotPossible(errorResponse, PAYMENT_NOT_POSSIBLE))
+		return Mono.just((OrderStatus) new OrderNotPossible(order, errorResponse, PAYMENT_NOT_POSSIBLE))
 				   .doOnNext(entity -> logger.error("Something went wrong while paying."));
 	}
 
