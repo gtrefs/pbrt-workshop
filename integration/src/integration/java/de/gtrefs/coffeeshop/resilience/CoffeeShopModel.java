@@ -19,6 +19,7 @@ public class CoffeeShopModel {
 	private final Pattern matcherForKnownFlavors;
 	private final Map<Long, OrderStatus> orders = new HashMap<>();
 	private boolean databaseEnabled = true;
+	private boolean paymentProviderEnabled = true;
 
 	public CoffeeShopModel(String patternForKnownFlavors){
 		this.matcherForKnownFlavors = Pattern.compile(patternForKnownFlavors);
@@ -70,6 +71,22 @@ public class CoffeeShopModel {
 
 	public void enableDatabase() {
 		this.databaseEnabled = true;
+	}
+
+	public boolean isPaymentProviderDisabled() {
+		return !paymentProviderEnabled;
+	}
+
+	public void enablePaymentProvider() {
+		this.paymentProviderEnabled = true;
+	}
+
+	public boolean isPaymentProviderEnabled() {
+		return paymentProviderEnabled;
+	}
+
+	public void disablePaymentProvider() {
+		this.paymentProviderEnabled = false;
 	}
 
 	public static class ModelResponse {

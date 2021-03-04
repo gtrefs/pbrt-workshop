@@ -53,11 +53,12 @@ public  class CoffeeShopWithFaults {
 				}
 			});
 
-	// Toxiproxy container, which will be used as a TCP proxy
+	// Toxiproxy container, which will be used as a TCP proxy.
+	// It can inject several faults into a connection.
 	static ToxiproxyContainer toxiProxy = new ToxiproxyContainer(DockerImageName.parse("shopify/toxiproxy:2.1.0"))
-			.withNetwork(network)
 			.dependsOn(postgresqlContainer)
-			.withNetworkAliases("toxiproxyPostgres");
+			.withNetwork(network)
+			.withNetworkAliases("toxiproxy");
 
 	protected static GenericContainer coffeeContainer = new GenericContainer(coffeeImage)
 			.withNetwork(network)
@@ -77,29 +78,36 @@ public  class CoffeeShopWithFaults {
 			.dependsOn(coffeeContainer)
 			.dependsOn(paymentContainer)
 			.withEnv("coffeeshop.barista.endpoint", "http://barista:8080")
-			.withEnv("coffeeshop.payment.endpoint", "http://paymentProvider:8080")
 			.withExposedPorts(8080)
 			.waitingFor(forLogMessage(".*Tomcat started.*", 1));
 
 	protected static EnableAndDisableProxy postgresProxy;
+	protected static EnableAndDisableProxy paymentProxy;
 
 	static {
 		start();
 	}
 
 	protected static void start(){
+		toxiProxy.start();
 		startCoffeeContainerWithToxic();
+		startPaymentContainerWithToxic();
 		orderContainer.start();
 		coffeeContainer.followOutput(new Slf4jLogConsumer(logger));
 		orderContainer.followOutput(new Slf4jLogConsumer(logger));
 		paymentContainer.followOutput(new Slf4jLogConsumer(logger));
 	}
 
+	private static void startPaymentContainerWithToxic() {
+		paymentProxy = new EnableAndDisableProxy(toxiProxy, paymentContainer, 8080);
+		orderContainer.withEnv("coffeeshop.payment.endpoint", "http://toxiproxy:"+paymentProxy.containerProxyPort());
+		paymentContainer.start();
+	}
+
 	private static void startCoffeeContainerWithToxic() {
-		toxiProxy.start();
 		postgresProxy = new EnableAndDisableProxy(toxiProxy, postgresqlContainer, PostgreSQLContainer.POSTGRESQL_PORT);
 		coffeeContainer
-				.withEnv("POSTGRES_HOST", "toxiproxyPostgres")
+				.withEnv("POSTGRES_HOST", "toxiproxy")
 				.withEnv("POSTGRES_PORT", postgresProxy.containerProxyPort() + "")
 				.start();
 	}
