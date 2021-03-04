@@ -86,39 +86,14 @@ public class CounterShould extends CoffeeShop {
 	// at the counter. Are you able to get some coffee for free?
 
 	@Property
+	@Disabled
 	public void deny_order_when_flavors_are_not_known(@ForAll("tasteless_flavors") List<Order> orders){
-		orders.forEach(order -> counter.body(order)
-								   .post("/order")
-							   .then()
-								   .assertThat()
-								   .statusCode(400)
-							   .and()
-								   .contentType("application/json"));
+		todo("Check that our system rejects orders like that all the time");
 	}
 
 	@Provide
 	public ListArbitrary<Order> tasteless_flavors(){
-		Arbitrary<String> flavors = Arbitraries.strings().all();
-		Arbitrary<String> creditCardNumbers = Arbitraries.strings().numeric().ofMinLength(13).ofMaxLength(16);
-		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).list();
-	}
-
-	@Property
-	public void accept_all_credit_cards(@ForAll("creditcard_order") List<Order> orders){
-		orders.forEach(order -> counter.body(order)
-								   .post("/order")
-							   .then()
-								   .assertThat()
-								   .statusCode(200)
-							   .and()
-								   .contentType("application/json"));
-	}
-
-	@Provide
-	public ListArbitrary<Order> creditcard_order(){
-		Arbitrary<String> flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
-		Arbitrary<String> creditCardNumbers = Arbitraries.strings().all();
-		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).list();
+		return todo("Return a list arbitrary for order generation.");
 	}
 
 	// Shrinking with these properties won't work because the state is not
@@ -130,6 +105,10 @@ public class CounterShould extends CoffeeShop {
 	public void restartCoffeeShop(){
 		stop();
 		start();
+	}
+
+	private <R> R todo(String todo){
+		throw new RuntimeException(todo);
 	}
 
 }
