@@ -2,6 +2,8 @@ package de.gtrefs.coffeeshop.integration;
 
 import java.util.*;
 
+import de.gtrefs.coffeeshop.*;
+
 import net.jqwik.api.*;
 import net.jqwik.api.arbitraries.*;
 

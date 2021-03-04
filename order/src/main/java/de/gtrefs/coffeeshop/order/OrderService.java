@@ -2,6 +2,7 @@ package de.gtrefs.coffeeshop.order;
 
 import javax.annotation.*;
 import java.math.*;
+import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.*;
@@ -36,6 +37,7 @@ public class OrderService {
 	private final ObjectReader errorReader = new ObjectMapper().readerFor(ErrorResponse.class);
 
 	private WebClient barista;
+	private FallBackBarista fallBackBarista = new FallBackBarista();
 	private WebClient paymentProvider;
 
 	@Autowired
@@ -76,17 +78,27 @@ public class OrderService {
 					  .retrieve()
 					  .bodyToMono(OrderedCup.class)
 					  .map(cup -> (OrderStatus) new CoffeeOrdered(order, cup))
+					  .timeout(Duration.ofMillis(100))
+					  .onErrorResume(TimeoutException.class, e -> {
+					  	logger.warn("First Barista is very slow. Asking second Barista to cover.");
+					  	return Mono.just(fallBackBarista.makeCoffee(order));
+					  })
 					  .onErrorResume(WebClientResponseException.class, e -> {
-						  logger.warn("Order not possible {}.", order, e);
-						  return Mono.just(readOrderNotPossible(order, e.getResponseBodyAsString()));
-					  }).doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
+						  logger.warn("First Barista cannot process the order. Let's ask the second Barista.", e);
+						  return Mono.just(fallBackOrRejectOrder(order, e));
+					  })
+					  .doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
 	}
 
-	private OrderStatus readOrderNotPossible(Order order, String response) {
-		if(response == null || response.isEmpty()) return OrderNotPossible.empty();
+	private OrderStatus fallBackOrRejectOrder(Order order, WebClientResponseException response) {
+		if(response.getStatusCode().is5xxServerError()){
+			return fallBackBarista.makeCoffee(order);
+		}
 		try{
-			ErrorResponse o = errorReader.readValue(response);
-			return new OrderNotPossible(order, o, OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
+			var errorMessage = response.getResponseBodyAsString();
+			return new OrderNotPossible(order,
+										errorReader.readValue(errorMessage),
+										OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
 		} catch (JsonProcessingException e) {
 			return OrderNotPossible.empty();
 		}

@@ -1,4 +1,4 @@
-package de.gtrefs.coffeeshop.integration;
+package de.gtrefs.coffeeshop;
 
 import com.fasterxml.jackson.annotation.*;
 import com.fasterxml.jackson.annotation.JsonInclude.*;

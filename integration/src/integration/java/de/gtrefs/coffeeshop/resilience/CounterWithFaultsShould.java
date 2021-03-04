@@ -1,4 +1,4 @@
-package de.gtrefs.coffeeshop.integration;
+package de.gtrefs.coffeeshop.resilience;
 
 import de.gtrefs.coffeeshop.*;
 import io.restassured.specification.*;
@@ -21,7 +21,7 @@ import net.jqwik.api.statistics.*;
 // For example, logs and metrics.
 //
 // That is: We trade in determinism for speed.
-public class CounterWithModelShould extends CoffeeShop{
+public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 
 	private CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
 
@@ -73,9 +73,11 @@ public class CounterWithModelShould extends CoffeeShop{
 
 	@Provide
 	private ActionSequenceArbitrary<RequestSpecification> order_existing_and_not_existing_flavors(){
-		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(15, orderExistingFlavor()),
-															 Tuple.of(5, orderRandomFlavor()),
-															 Tuple.of(1, checkState())));
+		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(50, orderExistingFlavor()),
+															 Tuple.of(10, orderRandomFlavor()),
+															 Tuple.of(5, Arbitraries.create(() -> new EnableDatabase(model))),
+															 Tuple.of(5, Arbitraries.create(() -> new DisableDatabase(model))),
+															 Tuple.of(10, checkState())));
 	}
 
 	private Arbitrary<Action<RequestSpecification>> checkState() {
@@ -157,4 +159,65 @@ public class CounterWithModelShould extends CoffeeShop{
 					'}';
 		}
 	}
+
+	public class DisableDatabase implements Action<RequestSpecification> {
+
+		private final CoffeeShopModel model;
+
+		public DisableDatabase(CoffeeShopModel model) {
+			this.model = model;
+		}
+
+		@Override
+		public boolean precondition(RequestSpecification state) {
+			boolean databaseEnabled = model.databaseEnabled();
+			if (databaseEnabled) {
+				Statistics.label("Fault Injection").collect("Disable Database");
+			}
+			return databaseEnabled;
+		}
+
+		@Override
+		public RequestSpecification run(RequestSpecification state) {
+			postgresProxy.disable();
+			model.disableDatabase();
+			return state;
+		}
+
+		@Override
+		public String toString() {
+			return "DisableDatabase{}";
+		}
+	}
+
+	public class EnableDatabase implements Action<RequestSpecification> {
+
+		private final CoffeeShopModel model;
+
+		public EnableDatabase(CoffeeShopModel model) {
+			this.model = model;
+		}
+
+		@Override
+		public boolean precondition(RequestSpecification state) {
+			boolean databaseDisabled = model.isDatabaseDisabled();
+			if (databaseDisabled) {
+				Statistics.label("Fault Injection").collect("Enable Database");
+			}
+			return databaseDisabled;
+		}
+
+		@Override
+		public RequestSpecification run(RequestSpecification state) {
+			postgresProxy.enable();
+			model.enableDatabase();
+			return state;
+		}
+
+		@Override
+		public String toString() {
+			return "EnableDatabase{}";
+		}
+	}
+
 }

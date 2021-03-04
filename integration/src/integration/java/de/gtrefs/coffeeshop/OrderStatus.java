@@ -1,4 +1,4 @@
-package de.gtrefs.coffeeshop.integration;
+package de.gtrefs.coffeeshop;
 
 import java.math.*;
 import java.util.*;

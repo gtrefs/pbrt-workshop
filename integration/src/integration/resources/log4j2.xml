@@ -6,7 +6,7 @@
         </Console>
     </Appenders>
     <Loggers>
-        <Logger name="de.gtrefs.coffeeshop.integration" level="INFO" additivity="false">
+        <Logger name="de.gtrefs.coffeeshop" level="INFO" additivity="false">
             <AppenderRef ref="Console"/>
         </Logger>
     </Loggers>

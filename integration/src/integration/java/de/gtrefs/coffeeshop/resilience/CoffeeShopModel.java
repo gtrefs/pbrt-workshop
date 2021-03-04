@@ -1,4 +1,4 @@
-package de.gtrefs.coffeeshop.integration;
+package de.gtrefs.coffeeshop.resilience;
 
 import java.math.*;
 import java.time.*;
@@ -9,7 +9,7 @@ import java.util.regex.*;
 import de.gtrefs.coffeeshop.*;
 import io.restassured.response.*;
 
-import static de.gtrefs.coffeeshop.integration.CoffeeShopModel.PostCondition.*;
+import static de.gtrefs.coffeeshop.resilience.CoffeeShopModel.PostCondition.*;
 import static org.assertj.core.api.Assertions.*;
 
 // A model of a coffee shop allows us to better represent
@@ -18,6 +18,7 @@ public class CoffeeShopModel {
 
 	private final Pattern matcherForKnownFlavors;
 	private final Map<Long, OrderStatus> orders = new HashMap<>();
+	private boolean databaseEnabled = true;
 
 	public CoffeeShopModel(String patternForKnownFlavors){
 		this.matcherForKnownFlavors = Pattern.compile(patternForKnownFlavors);
@@ -53,6 +54,22 @@ public class CoffeeShopModel {
 				assertThat(response.getStatusCode()).isEqualTo(200);
 			}
 		});
+	}
+
+	public boolean databaseEnabled() {
+		return databaseEnabled;
+	}
+
+	public void disableDatabase() {
+		this.databaseEnabled = false;
+	}
+
+	public boolean isDatabaseDisabled() {
+		return !databaseEnabled;
+	}
+
+	public void enableDatabase() {
+		this.databaseEnabled = true;
 	}
 
 	public static class ModelResponse {
