@@ -1,5 +1,7 @@
 **/.idea
 **/.gradle
 **/build
+.gradle
 .gitattributes
 .gitignore
+.git
