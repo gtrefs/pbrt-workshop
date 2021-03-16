@@ -3,4 +3,5 @@
 #
 # These are explicitly windows files and should use crlf
 *.bat           text eol=crlf
-
+# Use linefeed for all other files
+* text eol=lf
