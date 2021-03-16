@@ -61,6 +61,11 @@ public interface OrderStatus {
 				public String toString() {
 					return "Payment not possible.";
 				}
+			}, INSUFFICIENT_FUNDS {
+				@Override
+				public String toString() {
+					return "Payment not possible: Insufficient funds.";
+				}
 			}, BARISTA_NOT_AVAILABLE {
 				@Override
 				public String toString() {

@@ -13,7 +13,6 @@ public class PaymentService {
 
 	private final ConcurrentHashMap<String, BigDecimal> money;
 	private final AtomicLong runningReceiptNumber = new AtomicLong();
-	private final Random bigSpender = new Random();
 
 	@Value("${coffeeshop.payment.balance.start:10}")
 	private int startBalance = 10;
@@ -25,7 +24,11 @@ public class PaymentService {
 	public Receipt expense(PaymentCharge charge){
 		BigDecimal newBalance = money.compute(charge.getCreditCardNumber(), (creditCardNumber, balance) -> {
 			if(balance == null) return new BigDecimal(startBalance).subtract(charge.getPrice());
-			return balance.subtract(charge.getPrice());
+			BigDecimal computed = balance.subtract(charge.getPrice());
+			if(computed.longValue() <= -10L){
+				throw new InsufficientFunds("Insufficient funds for credit card: "+creditCardNumber);
+			}
+			return computed;
 		});
 		return new Receipt(runningReceiptNumber.incrementAndGet(), newBalance);
 	}

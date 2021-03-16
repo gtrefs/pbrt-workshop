@@ -2,7 +2,6 @@ package de.gtrefs.coffeeshop.resilience;
 
 import de.gtrefs.coffeeshop.*;
 import io.restassured.specification.*;
-import org.jetbrains.annotations.*;
 
 import net.jqwik.api.*;
 import net.jqwik.api.stateful.*;
@@ -36,12 +35,8 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 															 Tuple.of(10, checkState())));
 	}
 
-	// Third Exercise: When the payment provider is down, our coffeeshop falls
-	// back to cash. Please inject the corresponding faults using the paymentProxy.
-	// When you model any action, please keep in mind that there might be some
-	// precondition. For example, a disabled payment provider does not need to
-	// be enabled again.
-	// Hint: Look at the OrderService class in service order
+	// Third Exercise: How should the system react when the payment provider is
+	// down?
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void stay_responsive_when_payment_provider_is_down(@ForAll("orders_with_payment_provider_down") ActionSequence<RequestSpecification> actions) {
 		actions.run(counter);
@@ -50,18 +45,18 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 	@Provide
 	private ActionSequenceArbitrary<RequestSpecification> orders_with_payment_provider_down(){
 		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(50, orderExistingFlavor()),
-															 Tuple.of(10, orderRandomFlavor()),
-															 Tuple.of(5, enablePaymentProvider()),
-															 Tuple.of(5, disablePaymentProvider()),
-															 Tuple.of(10, checkState())));
+				Tuple.of(10, orderRandomFlavor()),
+				Tuple.of(5, enablePaymentProvider()),
+				Tuple.of(5, disablePaymentProvider()),
+				Tuple.of(10, checkState())));
 	}
 
 	private Arbitrary<Action<RequestSpecification>> disablePaymentProvider() {
-		return todo("Implement action for disabling a payment provider.");
+		return Arbitraries.create(() -> new DisablePaymentProvider(model));
 	}
 
 	private Arbitrary<Action<RequestSpecification>> enablePaymentProvider() {
-		return todo("Implement action for enabling a payment provider.");
+		return  Arbitraries.create(() -> new EnablePaymentProvider(model));
 	}
 
 	private Arbitrary<Action<RequestSpecification>> checkState() {
@@ -204,8 +199,64 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 		}
 	}
 
-	private <R> R todo(String todo){
-		throw new RuntimeException(todo);
+	public class EnablePaymentProvider implements Action<RequestSpecification> {
+
+		private final CoffeeShopModel model;
+
+		public EnablePaymentProvider(CoffeeShopModel model) {
+			this.model = model;
+		}
+
+		@Override
+		public boolean precondition(RequestSpecification state) {
+			boolean paymentProviderDisabled = model.isPaymentProviderDisabled();
+			if (paymentProviderDisabled) {
+				Statistics.label("Fault Injection").collect("Enable Payment Provider");
+			}
+			return paymentProviderDisabled;
+		}
+
+		@Override
+		public RequestSpecification run(RequestSpecification state) {
+			paymentProxy.enable();
+			model.enablePaymentProvider();
+			return state;
+		}
+
+		@Override
+		public String toString() {
+			return "EnablePaymentProvider{}";
+		}
+	}
+
+	public class DisablePaymentProvider implements Action<RequestSpecification> {
+
+		private final CoffeeShopModel model;
+
+		public DisablePaymentProvider(CoffeeShopModel model) {
+			this.model = model;
+		}
+
+		@Override
+		public boolean precondition(RequestSpecification state) {
+			boolean paymentProviderEnabled = model.isPaymentProviderEnabled();
+			if (paymentProviderEnabled) {
+				Statistics.label("Fault Injection").collect("Disable Payment Provider");
+			}
+			return paymentProviderEnabled;
+		}
+
+		@Override
+		public RequestSpecification run(RequestSpecification state) {
+			paymentProxy.disable();
+			model.disablePaymentProvider();
+			return state;
+		}
+
+		@Override
+		public String toString() {
+			return "DisablePaymentProvider{}";
+		}
 	}
 
 }

@@ -7,11 +7,12 @@ import net.jqwik.api.*;
 import net.jqwik.api.stateful.*;
 import net.jqwik.api.statistics.*;
 
+import static org.hamcrest.Matchers.startsWith;
+
 // Please note, that shrinking is turned off for all the following properties.
-// As we discussed, in the last part of the workshop, shrinking helps us to
-// find a minimal or significant less complex example which falsifies our
-// properties. However, in a stateful environment shrinking requires a reset
-// of the state. Otherwise, a non-deterministic outcome is very likely.
+// Shrinking helps us to find a minimal or significant less complex example which
+// falsifies our properties. However, in a stateful environment shrinking requires
+// a reset of the state. Otherwise, a non-deterministic outcome is very likely.
 //
 // Resetting our application is costly in terms of time. All containers are
 // stopped and started again. Sometimes there are easier ways to reset an
@@ -25,10 +26,27 @@ public class CounterWithModelShould extends CoffeeShop{
 
 	private CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
 
+	// An example integration test one could write in order to find out if we can order
+	// a latte macchiato. As this coffeeshop is quite new, our baristas are
+	// quite untrained and we don't get a latte. But there is more espresso.
+	@Example
+	public void not_offer_latte_macchiato(){
+		String order = "{\"flavor\": \"Latte Macchiato\", \"creditCardNumber\":  \"123\"}";
+		counter.body(order)
+				.contentType("application/json")
+				.post("/order")
+			.then()
+				.assertThat()
+				.statusCode(400)
+			.and()
+				.assertThat()
+				.body("error.details[0]", startsWith("We don't offer"));
+	}
+
 	// Let's revisit our test from before. We don't want to run people into
 	// significant debt. This time the tests itself looks much smaller. The
 	// actual check moved to the ModelResponse class.
-	@Property(shrinking = ShrinkingMode.OFF)
+	@Property(shrinking = ShrinkingMode.OFF, tries = 20)
 	public void not_run_people_into_debt(@ForAll("orders_for_the_same_credit_card") ActionSequence<RequestSpecification> orders){
 		orders.run(counter);
 	}
@@ -75,7 +93,9 @@ public class CounterWithModelShould extends CoffeeShop{
 	}
 
 	private Arbitrary<Action<RequestSpecification>> orderRandomFlavor() {
-		return todo("return orders with random flavor");
+		var flavors = Arbitraries.strings().ascii().ofMinLength(3).ofMinLength(15);
+		var creditCardNumbers = Arbitraries.strings().numeric().ofMinLength(13).ofMaxLength(16);
+		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).map(order -> new OrderCoffee(model, order, "Random Flavor"));
 	}
 
 	private Arbitrary<Action<RequestSpecification>> orderExistingFlavor() {
@@ -146,9 +166,5 @@ public class CounterWithModelShould extends CoffeeShop{
 					"orderId=" + orderId +
 					'}';
 		}
-	}
-
-	private <R> R todo(String todo){
-		throw new RuntimeException(todo);
 	}
 }

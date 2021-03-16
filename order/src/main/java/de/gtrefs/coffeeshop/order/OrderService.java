@@ -2,7 +2,6 @@ package de.gtrefs.coffeeshop.order;
 
 import javax.annotation.*;
 import java.math.*;
-import java.net.*;
 import java.time.*;
 import java.util.*;
 import java.util.concurrent.*;
@@ -122,10 +121,21 @@ public class OrderService {
 				   .map(receipt -> (OrderStatus) new CoffeePayed(receipt, ordered.cup, ordered.order));
 		}).onErrorResume(WebClientRequestException.class, e -> {
 			logger.warn("Payment provider could not process payment. We cannot fulfill the order.", e);
-			// Todo: Fall back to cash
-			return Mono.empty();
+			return payByCash(ordered);
+		}).onErrorResume(WebClientResponseException.class, e -> {
+			return Mono.just(insufficientFunds(ordered.order, e));
 		}).switchIfEmpty(paymentNotPossible(ordered.order()))
 				   .doOnNext(status -> orderRepository.put(status.order().getOrderNumber(), status));
+	}
+
+	private OrderStatus insufficientFunds(Order order, WebClientResponseException response) {
+		logger.warn("Insufficient funds: {}", order);
+		try{
+			var errorMessage = response.getResponseBodyAsString();
+			return new OrderNotPossible(order, errorReader.readValue(errorMessage), INSUFFICIENT_FUNDS);
+		} catch (JsonProcessingException e) {
+			return OrderNotPossible.empty();
+		}
 	}
 
 	private Mono<? extends OrderStatus> payByCash(CoffeeOrdered ordered) {
