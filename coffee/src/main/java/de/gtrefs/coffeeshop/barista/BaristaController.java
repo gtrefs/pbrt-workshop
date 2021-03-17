@@ -31,8 +31,7 @@ public class BaristaController {
 	}
 	
 	@GetMapping("/coffees/{id}")
-	Cup getServedCoffee(@PathVariable @Min(value = 1, message = "Please tell us which coffee you are referring to.") Long id)
-	{
+	Cup getServedCoffee(@PathVariable @Min(value = 1, message = "Please tell us which coffee you are referring to.") Long id) {
 	    return coffees.findById(id)
 					  .orElseThrow(() -> new CoffeeNotMadeHere("Sorry. We never made coffee with "+id));
 	}

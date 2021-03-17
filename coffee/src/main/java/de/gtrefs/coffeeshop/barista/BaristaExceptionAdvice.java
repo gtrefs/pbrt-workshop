@@ -16,8 +16,7 @@ public class BaristaExceptionAdvice extends ResponseEntityExceptionHandler
 	private String BAD_REQUEST = "BAD_REQUEST";
 	
 	@ExceptionHandler(CoffeeNotMadeHere.class)
-	public final ResponseEntity<ErrorResponse> handleUserNotFoundException
-						(CoffeeNotMadeHere ex, WebRequest request) {
+	public final ResponseEntity<ErrorResponse> handleUserNotFoundException(CoffeeNotMadeHere ex, WebRequest request) {
 		List<String> details = new ArrayList<>();
 		details.add(ex.getLocalizedMessage());
 		ErrorResponse error = new ErrorResponse(INCORRECT_REQUEST, details);
@@ -25,11 +24,9 @@ public class BaristaExceptionAdvice extends ResponseEntityExceptionHandler
 	}
 	
 	@ExceptionHandler(ConstraintViolationException.class)
-	public final ResponseEntity<ErrorResponse> handleConstraintViolation(
-											ConstraintViolationException ex,
-											WebRequest request) {
+	public final ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex, WebRequest request) {
 		List<String> details = ex.getConstraintViolations()
-									.parallelStream()
+									.stream()
 									.map(ConstraintViolation::getMessage)
 									.collect(Collectors.toList());
 
