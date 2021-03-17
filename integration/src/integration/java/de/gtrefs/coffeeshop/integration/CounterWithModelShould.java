@@ -24,12 +24,12 @@ import static org.hamcrest.Matchers.startsWith;
 // That is: We trade in determinism for speed.
 public class CounterWithModelShould extends CoffeeShop{
 
-	private CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
+	private static CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
 
 	// An example integration test one could write in order to find out if we can order
 	// a latte macchiato. As this coffeeshop is quite new, our baristas are
 	// quite untrained and we don't get a latte. But there is more espresso.
-	@Example
+	//@Example
 	public void not_offer_latte_macchiato(){
 		String order = "{\"flavor\": \"Latte Macchiato\", \"creditCardNumber\":  \"123\"}";
 		counter.body(order)

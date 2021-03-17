@@ -19,7 +19,7 @@ import net.jqwik.api.statistics.*;
 //
 public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 
-	private final CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
+	private static final CoffeeShopModel model = new CoffeeShopModel("melange|black|espresso|ristretto|cappuccino");
 
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void return_unsuccessful_orders(@ForAll("order_existing_and_not_existing_flavors") ActionSequence<RequestSpecification> actions) {
