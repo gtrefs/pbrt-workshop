@@ -55,6 +55,8 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 				Tuple.of(10, checkState())));
 	}
 
+	// (Optional) Exercise 4: Inject both faults randomly while exercising the service
+
 	private Arbitrary<Action<RequestSpecification>> disablePaymentProvider() {
 		// TODO: Exercise 3 Create action
 		return Arbitraries.create(() -> null);
