@@ -36,7 +36,11 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 	}
 
 	// Third Exercise: How should the system react when the payment provider is
-	// down?
+	// down? We fall back to paying by cash. For this implement the following
+	// 1. Two actions which enable and disable the payment provider respectively.
+	//    The payment provider can only be disabled when it is enabled and vice versa.
+	// 2. Run the property.
+	// 3. Adapt the order service to fall back to cash when the payment provider cannot be reached
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void stay_responsive_when_payment_provider_is_down(@ForAll("orders_with_payment_provider_down") ActionSequence<RequestSpecification> actions) {
 		actions.run(counter);
@@ -52,11 +56,13 @@ public class CounterWithFaultsShould extends CoffeeShopWithFaults {
 	}
 
 	private Arbitrary<Action<RequestSpecification>> disablePaymentProvider() {
-		return Arbitraries.create(() -> new DisablePaymentProvider(model));
+		// TODO: Exercise 3 Create action
+		return Arbitraries.create(() -> null);
 	}
 
 	private Arbitrary<Action<RequestSpecification>> enablePaymentProvider() {
-		return  Arbitraries.create(() -> new EnablePaymentProvider(model));
+		// TODO: Exercise 3 Create action
+		return Arbitraries.create(() -> null);
 	}
 
 	private Arbitrary<Action<RequestSpecification>> checkState() {

@@ -115,7 +115,8 @@ public class OrderService {
 				   .map(receipt -> (OrderStatus) new CoffeePayed(receipt, ordered.cup, ordered.order));
 		}).onErrorResume(WebClientRequestException.class, e -> {
 			logger.warn("Payment provider could not process payment. We cannot fulfill the order.", e);
-			return payByCash(ordered);
+			// TODO: Exercise 3 Fall back to to cash if the request was not successful
+			throw e;
 		}).onErrorResume(WebClientResponseException.class, e -> {
 			return Mono.just(insufficientFunds(ordered.order, e));
 		}).switchIfEmpty(paymentNotPossible(ordered.order()))
