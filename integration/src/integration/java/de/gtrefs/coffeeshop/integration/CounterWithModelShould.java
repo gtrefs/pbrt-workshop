@@ -43,27 +43,9 @@ public class CounterWithModelShould extends CoffeeShop{
 				.body("error.details[0]", startsWith("We don't offer"));
 	}
 
-	// Let's revisit our test from before. We don't want to run people into
-	// significant debt. This time the tests itself looks much smaller. The
-	// actual check moved to the ModelResponse class.
-	@Property(shrinking = ShrinkingMode.OFF, tries = 20)
-	public void not_run_people_into_debt(@ForAll("orders_for_the_same_credit_card") ActionSequence<RequestSpecification> orders){
-		orders.run(counter);
-	}
-
-	@Provide
-	private ActionSequenceArbitrary<RequestSpecification> orders_for_the_same_credit_card(){
-		var flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
-		var creditCardNumber = Arbitraries.just("98236587");
-		Arbitrary<Action<RequestSpecification>> orders = Combinators.combine(flavors, creditCardNumber)
-																 .as(Order::new)
-																 .map(order -> new OrderCoffee(model, order, "Existing"));
-		return Arbitraries.sequences(orders);
-	}
-
 	// A model allows us to model the desired behavior that we want to check.
 	// It is the source of truth for our application. Usually, if a tests
-	// fails, it is the application which it is our application.
+	// fails, it is the application which is at fault.
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void return_successful_orders(@ForAll("order_and_get_orders") ActionSequence<RequestSpecification> actions){
 		actions.run(counter);
@@ -73,6 +55,7 @@ public class CounterWithModelShould extends CoffeeShop{
 	private ActionSequenceArbitrary<RequestSpecification> order_and_get_orders(){
 		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(10, orderExistingFlavor()), Tuple.of(1, checkState())));
 	}
+
 	// Exercise 2: In the test above we checked that we can get the state
 	// of successful orders. Any order which does not contain a supported flavor,
 	// should be rejected. The resulting state should be stored in the model.
@@ -102,6 +85,22 @@ public class CounterWithModelShould extends CoffeeShop{
 		var flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
 		var creditCardNumbers = Arbitraries.strings().numeric().ofMinLength(13).ofMaxLength(16);
 		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).map(order -> new OrderCoffee(model, order, "Existing Flavor"));
+	}
+
+	// We don't want to run people into significant debt.
+	@Property(shrinking = ShrinkingMode.OFF, tries = 20)
+	public void not_run_people_into_debt(@ForAll("orders_for_the_same_credit_card") ActionSequence<RequestSpecification> orders){
+		orders.run(counter);
+	}
+
+	@Provide
+	private ActionSequenceArbitrary<RequestSpecification> orders_for_the_same_credit_card(){
+		var flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
+		var creditCardNumber = Arbitraries.just("98236587");
+		Arbitrary<Action<RequestSpecification>> orders = Combinators.combine(flavors, creditCardNumber)
+				.as(Order::new)
+				.map(order -> new OrderCoffee(model, order, "Existing"));
+		return Arbitraries.sequences(orders);
 	}
 
 	public class OrderCoffee implements Action<RequestSpecification> {
