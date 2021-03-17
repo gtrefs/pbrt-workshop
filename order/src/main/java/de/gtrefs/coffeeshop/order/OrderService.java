@@ -95,14 +95,8 @@ public class OrderService {
 		if(response.getStatusCode().is5xxServerError()){
 			return fallBackBarista.makeCoffee(order);
 		}
-		try{
-			var errorMessage = response.getResponseBodyAsString();
-			return new OrderNotPossible(order,
-										errorReader.readValue(errorMessage),
-										OrderNotPossible.Reason.BARISTA_NOT_AVAILABLE);
-		} catch (JsonProcessingException e) {
-			return OrderNotPossible.empty();
-		}
+		// TODO: Exercise 1 Return order not possible with proper error message
+		throw response;
 	}
 
 	private Mono<OrderStatus> payForCoffee(OrderStatus orderStatus) {

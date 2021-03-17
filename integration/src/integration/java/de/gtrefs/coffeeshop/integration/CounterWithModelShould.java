@@ -56,9 +56,9 @@ public class CounterWithModelShould extends CoffeeShop{
 		return Arbitraries.sequences(Arbitraries.frequencyOf(Tuple.of(10, orderExistingFlavor()), Tuple.of(1, checkState())));
 	}
 
-	// Exercise 2: In the test above we checked that we can get the state
+	// Exercise 1: In the test above we checked that we can get the state
 	// of successful orders. Any order which does not contain a supported flavor,
-	// should be rejected. The resulting state should be stored in the model.
+	// should be rejected as a bad request. The resulting state should be stored in the model.
 	@Property(shrinking = ShrinkingMode.OFF, tries = 100)
 	public void return_unsuccessful_orders(@ForAll("order_existing_and_not_existing_flavors") ActionSequence<RequestSpecification> actions) {
 		actions.run(counter);
