@@ -27,11 +27,6 @@ public class BaristaController {
 
 	@PostMapping("/coffees")
 	Cup orderCoffee(@RequestBody Cup wantedCoffee) {
-//		Validator validator = Validation.buildDefaultValidatorFactory().getValidator();
-//		Set<ConstraintViolation<Cup>> constraintViolations = validator.validate(wantedCoffee);
-//		if(constraintViolations != null || !constraintViolations.isEmpty()){
-//			throw new ConstraintViolationException(constraintViolations);
-//		}
 		return coffees.save(wantedCoffee);
 	}
 	
