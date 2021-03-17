@@ -124,12 +124,8 @@ public class OrderService {
 
 	private OrderStatus insufficientFunds(Order order, WebClientResponseException response) {
 		logger.warn("Insufficient funds: {}", order);
-		try{
-			var errorMessage = response.getResponseBodyAsString();
-			return new OrderNotPossible(order, errorReader.readValue(errorMessage), INSUFFICIENT_FUNDS);
-		} catch (JsonProcessingException e) {
-			return OrderNotPossible.empty();
-		}
+		// TODO: Exercise 2 Parse error message from response and create a new OrderNotPossible status
+		throw response;
 	}
 
 	private Mono<? extends OrderStatus> payByCash(CoffeeOrdered ordered) {

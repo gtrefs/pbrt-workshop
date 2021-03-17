@@ -34,10 +34,7 @@ public class CoffeeShopModel {
 				assertThat(coffeePayed.receipt.getBalance()).isGreaterThan(new BigDecimal(-10));
 				orders.put(orderNumber, coffeePayed);
 			}).or(response -> {
-				assertThat(response.getStatusCode()).isEqualTo(400);
-				var orderNotPossible = response.as(OrderStatus.OrderNotPossible.class);
-				assertThat(orderNotPossible.error.details.get(0)).isEqualTo("Insufficient funds for credit card: " + modelOrder.getCreditCardNumber());
-				orders.put(orderNotPossible.order.getOrderNumber(), orderNotPossible);
+				// TODO: Exercise 2 Verify that the return code is a bad request and save the corresponding state in orders
 			}));
 		}
 		return new ModelResponse(unknownFlavor().andThen(response -> {

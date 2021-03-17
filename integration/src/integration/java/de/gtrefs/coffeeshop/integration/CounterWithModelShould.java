@@ -87,7 +87,11 @@ public class CounterWithModelShould extends CoffeeShop{
 		return Combinators.combine(flavors, creditCardNumbers).as(Order::new).map(order -> new OrderCoffee(model, order, "Existing Flavor"));
 	}
 
-	// We don't want to run people into significant debt.
+	// Exercise 2: We don't want to run people into significant debt. When the balance of the credit card drops
+	// below -10, then no more coffee can be payed. Look at the property and make it pass by
+	// 1. Generating orders for the same credit card number
+	// 2. Adapting the model to verify that an order is rejected when there are insufficient funds and
+	// 3. Adapt the order service to adhere to the model
 	@Property(shrinking = ShrinkingMode.OFF, tries = 20)
 	public void not_run_people_into_debt(@ForAll("orders_for_the_same_credit_card") ActionSequence<RequestSpecification> orders){
 		orders.run(counter);
@@ -97,9 +101,8 @@ public class CounterWithModelShould extends CoffeeShop{
 	private ActionSequenceArbitrary<RequestSpecification> orders_for_the_same_credit_card(){
 		var flavors = Arbitraries.of("Black", "Melange", "Espresso", "Ristretto", "Cappuccino");
 		var creditCardNumber = Arbitraries.just("98236587");
-		Arbitrary<Action<RequestSpecification>> orders = Combinators.combine(flavors, creditCardNumber)
-				.as(Order::new)
-				.map(order -> new OrderCoffee(model, order, "Existing"));
+		// TODO: Exercise 2 Combine arbitraries into orders
+		Arbitrary<Action<RequestSpecification>> orders = null;
 		return Arbitraries.sequences(orders);
 	}
 
